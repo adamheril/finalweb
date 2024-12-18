@@ -20,13 +20,19 @@ if ($conn->connect_error) {
     die("Koneksi gagal: " . $conn->connect_error);
 }
 
-// Hapus data berdasarkan ID
-if (isset($_GET['hapus_id'])) {
-    $id = (int)$_GET['hapus_id'];
-    $sqlDelete = "DELETE FROM tbl_tambahpantai WHERE id = $id";
-    $conn->query($sqlDelete);
-    header("Location: admin_dashboard.php");  // Arahkan ke admin_dashboard.php setelah penghapusan
-    exit();
+// Proses tambah pantai
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah'])) {
+    $namapantai = $_POST['namapantai'];
+    $deskripsi = $_POST['deskripsi'];
+    $gambar = $_POST['gambar'];
+
+    $sqlInsert = "INSERT INTO tbl_tambahpantai (namapantai, deskripsi, gambar) VALUES ('$namapantai', '$deskripsi', '$gambar')";
+    if ($conn->query($sqlInsert) === TRUE) {
+        // Data berhasil ditambahkan, arahkan kembali ke halaman tambah pantai untuk menampilkan data terbaru
+        echo "<script>alert('Pantai berhasil ditambahkan!'); window.location='tambah_pantai.php';</script>";
+    } else {
+        echo "Error: " . $conn->error;
+    }
 }
 
 // Ambil data dari tabel tbl_tambahpantai
@@ -47,22 +53,21 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Kelola Konten Pantai</title>
+    <title>Tambah Pantai</title>
     <style>
         body {
-            font-family: 'Cambria', serif;
+            font-family: "Cambria", serif;
             background-image: url("https://img.freepik.com/free-photo/aerial-view-beach-washed-by-blue-ocean-water-indonesia_181624-51814.jpg?semt=ais_tags_boosted");
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
             margin: 0;
             padding: 0;
-            height: 100vh; /* Agar background seluruh layar */
+            height: 100vh;
             color: #fff;
         }
 
         .dashboard {
-            position: relative;
             max-width: 1000px;
             margin: 50px auto;
             padding: 20px;
@@ -70,19 +75,18 @@ $conn->close();
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             text-align: center;
-            width: 90%;  /* Menyesuaikan lebar dengan konten */
-            min-height: 100vh;  /* Mengatur tinggi minimum untuk mengisi layar */
             opacity: 0;
-            animation: fadeIn 1s forwards;
+            transform: translateY(-50px);
+            transition: all 1s ease-out;
         }
 
         h1 {
-            color: #ffdd57;
+            color: #D1D1D1; /* Kuning abu-abu */
             font-size: 32px;
         }
 
         h2 {
-            color: #ffdd57;
+            color: #D1D1D1; /* Kuning abu-abu */
             margin-bottom: 20px;
             font-size: 28px;
         }
@@ -92,8 +96,6 @@ $conn->close();
             margin-top: 20px;
             border-collapse: collapse;
             color: #fff;
-            opacity: 0;
-            animation: fadeIn 1s forwards;
         }
 
         .content-table th, .content-table td {
@@ -121,7 +123,7 @@ $conn->close();
             border-radius: 5px;
         }
 
-        .logout-btn, .edit-btn, .delete-btn, .add-btn {
+        .back-btn, .add-btn {
             display: inline-block;
             padding: 8px 15px;
             margin: 5px;
@@ -132,95 +134,91 @@ $conn->close();
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
-            opacity: 0;
-            animation: fadeIn 1s forwards;
         }
 
-        .logout-btn {
-            background-color: #e74c3c;
+        .back-btn {
+            background-color: #007bff;
         }
 
-        .logout-btn:hover {
-            background-color: #c0392b;
-        }
-
-        .edit-btn {
-            background-color: #3498db;
-        }
-
-        .edit-btn:hover {
-            background-color: #2980b9;
-        }
-
-        .delete-btn {
-            background-color: #e74c3c;
-        }
-
-        .delete-btn:hover {
-            background-color: #c0392b;
+        .back-btn:hover {
+            background-color: #0056b3;
         }
 
         .add-btn {
-            background-color: #28a745;
+            background-color: #ADD8E6; /* Biru muda */
         }
 
         .add-btn:hover {
-            background-color: #218838;
+            background-color: #87CEEB; /* Biru lebih tua saat hover */
         }
 
-        .buttons-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 10px;
+        .form-container {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: #fff;
         }
 
-        .kembali-btn {
-            background-color: #007bff;
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button[type="submit"] {
+            background-color: #28a745;
             color: white;
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            opacity: 0;
-            animation: fadeIn 1s forwards;
         }
 
-        .kembali-btn:hover {
-            background-color: #0056b3;
+        button[type="submit"]:hover {
+            background-color: #218838;
         }
 
-        /* Animasi untuk fade-in */
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
+        /* Responsif untuk tampilan mobile */
+        @media screen and (max-width: 768px) {
+            .dashboard {
+                width: 80%;
             }
-        }
 
-        /* Animasi untuk efek klik */
-        @keyframes scaleClick {
-            0% {
-                transform: scale(1);
+            .btn {
+                font-size: 16px;
+                padding: 10px 20px;
             }
-            50% {
-                transform: scale(1.1);
+
+            h1, h2 {
+                font-size: 28px;
             }
-            100% {
-                transform: scale(1);
+
+            p {
+                font-size: 16px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <h1>Kelola Konten Pantai</h1>
-        <p>Selamat datang, <?php echo htmlspecialchars($_SESSION['username']); ?>! Anda dapat mengelola daftar pantai di sini.</p>
+    <div class="dashboard" id="dashboard">
+        <h1>Tambah Pantai Baru</h1>
+        <p>Silakan tambahkan pantai baru di bawah ini:</p>
+
+        <!-- Form untuk menambah pantai -->
+        <div class="form-container">
+            <form method="POST" action="tambah_pantai.php">
+                <input type="text" name="namapantai" placeholder="Nama Pantai" required>
+                <textarea name="deskripsi" placeholder="Deskripsi Pantai" rows="4" required></textarea>
+                <input type="text" name="gambar" placeholder="URL Gambar Pantai" required>
+                <button type="submit" name="tambah" class="add-btn">Tambah Pantai</button>
+            </form>
+        </div>
 
         <h2>Daftar Pantai</h2>
-
-        <!-- Button to open the Add New Beach Form -->
-        <a href="tambah_pantai.php" class="add-btn">Tambah Pantai Baru</a>
 
         <table class="content-table">
             <thead>
@@ -229,7 +227,6 @@ $conn->close();
                     <th>Nama Pantai</th>
                     <th>Deskripsi</th>
                     <th>Gambar</th>
-                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -239,29 +236,24 @@ $conn->close();
                         <td><?php echo htmlspecialchars($beach['namapantai']); ?></td>
                         <td><?php echo htmlspecialchars($beach['deskripsi']); ?></td>
                         <td><img src="<?php echo htmlspecialchars($beach['gambar']); ?>" alt="Image"></td>
-                        <td class="buttons-container">
-                            <a href="edit.php?id=<?php echo $beach['id']; ?>" class="edit-btn">Edit</a>
-                            <a href="?hapus_id=<?php echo $beach['id']; ?>" class="delete-btn" onclick="return confirm('Yakin ingin menghapus data ini?')">Hapus</a>
-                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
 
-        <!-- Button kembali -->
-        <form action="utama.php" method="POST" style="margin-top: 20px;">
-            <button type="submit" class="kembali-btn">Kembali</button>
+        <!-- Button Kembali -->
+        <form action="admin_dashboard.php" method="GET" style="margin-top: 20px;">
+            <button type="submit" class="back-btn">Kembali</button>
         </form>
     </div>
 
     <script>
-        // Menambahkan efek klik pada tombol dengan animasi scale
-        const buttons = document.querySelectorAll('.logout-btn, .edit-btn, .delete-btn, .add-btn, .kembali-btn');
-        buttons.forEach(button => {
-            button.addEventListener('click', function() {
-                this.style.animation = 'scaleClick 0.2s';
-            });
-        });
+        // Fungsi untuk animasi muncul
+        window.onload = function() {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.style.opacity = '1';
+            dashboard.style.transform = 'translateY(0)';
+        };
     </script>
 </body>
 </html>
